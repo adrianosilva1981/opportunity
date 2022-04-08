@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\UserValidate;
+use Illuminate\Support\Arr;
 use App\Models\User;
 use Dotenv\Exception\ValidationException;
 use Illuminate\Http\Response;
@@ -17,31 +18,16 @@ class UserController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
-    public function index()
+    public function index(Request $request)
     {
-        return response()->json(['teste' => 'teste']);
-    }
-
-    /**
-     * Show the form for creating a new resource.
-     *
-     * @return \Illuminate\Http\Response
-     */
-    public function create(Request $request)
-    {
-        return $this->getResponseJson(['teset' => 'teste'], 'sucess', '', [], Response::HTTP_CREATED);
-
         try {
             $input = $request->all();
-
-            $input['password'] = Hash::make($input['password']);
-            $user = User::create($input);
-
-            return $this->getResponseJson($user, 'sucess', '', [], Response::HTTP_CREATED);
+            $users = User::orderBy('name', 'DESC')->paginate((int)$_ENV['PAGE_ROWS']);
+            return response()->json($users, Response::HTTP_OK);
         } catch (ValidationException $validationException) {
-            return $this->getResponseJson([], 'error', $validationException->getMessage(), [], Response::HTTP_UNPROCESSABLE_ENTITY);
+            return response()->json(['message' => $validationException->getMessage()], Response::HTTP_UNPROCESSABLE_ENTITY);
         } catch (\Exception $exception) {
-            return $this->getResponseJson([], 'error', $exception->getMessage(), [], Response::HTTP_INTERNAL_SERVER_ERROR);
+            return response()->json(['message' => $exception->getMessage()], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -51,14 +37,14 @@ class UserController extends Controller
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\Response
      */
-    public function store(Request $request)
+    public function store(UserValidate $request)
     {
         try {
             $input = $request->all();
 
             $input['password'] = Hash::make($input['password']);
             $user = User::create($input);
-            return response()->json(['sucesso' => 'sucesso'], Response::HTTP_CREATED);
+            return response()->json($user, Response::HTTP_CREATED);
         } catch (ValidationException $validationException) {
             return response()->json(['message' => $validationException->getMessage()], Response::HTTP_UNPROCESSABLE_ENTITY);
         } catch (\Exception $exception) {
@@ -74,18 +60,14 @@ class UserController extends Controller
      */
     public function show($id)
     {
-        //
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
-    public function edit($id)
-    {
-        //
+        try {
+            $user = User::find($id);
+            return response()->json($user, Response::HTTP_CREATED);
+        } catch (ValidationException $validationException) {
+            return response()->json(['message' => $validationException->getMessage()], Response::HTTP_UNPROCESSABLE_ENTITY);
+        } catch (\Exception $exception) {
+            return response()->json(['message' => $exception->getMessage()], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
     }
 
     /**
@@ -95,9 +77,30 @@ class UserController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function update(Request $request, $id)
+    public function update(UserValidate $request, $id)
     {
-        //
+        try {
+            $input = $request->all();
+            $input = Arr::except($input, array('email'));
+            if (!empty($input['password'])) {
+                $input['password'] = Hash::make($input['password']);
+            } else {
+                $input = Arr::except($input, array('password'));
+            }
+
+            $user = User::find($id);
+            $user->update($input);
+
+            if ($user) {
+                return response()->json($user, Response::HTTP_OK);
+            }
+
+            return response()->json(['message' => 'Update Error'], Response::HTTP_UNPROCESSABLE_ENTITY);
+        } catch (ValidationException $validationException) {
+            return response()->json(['message' => $validationException->getMessage()], Response::HTTP_UNPROCESSABLE_ENTITY);
+        } catch (\Exception $exception) {
+            return response()->json(['message' => $exception->getMessage()], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
     }
 
     /**
@@ -108,6 +111,16 @@ class UserController extends Controller
      */
     public function destroy($id)
     {
-        //
+        try {
+            if (User::where('id', $id)->delete()) {
+                return response()->json(['message' => 'Usuário excluído com sucesso'], Response::HTTP_OK);
+            }
+
+            return response()->json(['message' => 'Update Error'], Response::HTTP_UNPROCESSABLE_ENTITY);
+        } catch (ValidationException $validationException) {
+            return response()->json(['message' => $validationException->getMessage()], Response::HTTP_UNPROCESSABLE_ENTITY);
+        } catch (\Exception $exception) {
+            return response()->json(['message' => $exception->getMessage()], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
     }
 }

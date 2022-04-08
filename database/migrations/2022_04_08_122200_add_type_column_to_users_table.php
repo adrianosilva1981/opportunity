@@ -14,7 +14,7 @@ class AddTypeColumnToUsersTable extends Migration
     public function up()
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->enum('type', ['seller', 'admin'])->default('seller');
+            $table->enum('type', ['seller', 'buyer'])->default('seller');
         });
     }
 
