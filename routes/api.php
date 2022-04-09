@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\OpportunityController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\UserController;
 use Illuminate\Http\Request;
@@ -31,3 +32,5 @@ Route::group(['prefix' => 'auth'], function () {
 
 Route::resource('users', UserController::class);
 Route::resource('products', ProductController::class);
+Route::resource('opportunities', OpportunityController::class);
+Route::put('opportunities/stauts/{id}', [OpportunityController::class, 'stauts'])->where('id', '[0-9]+');
